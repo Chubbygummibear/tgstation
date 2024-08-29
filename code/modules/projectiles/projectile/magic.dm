@@ -608,3 +608,82 @@
 /obj/projectile/magic/shrink/wand/on_hit(atom/target, blocked = 0, pierce_hit)
 	shrink_time = rand(60 SECONDS, 90 SECONDS)
 	return ..()
+
+/obj/projectile/magic/pointer
+	name = "arrow of indication"
+	icon_state = "arrow"
+	damage = 0
+	damage_type = STAMINA
+	homing = TRUE
+	//impact_effect_type = /obj/effect/temp_visual/impact_effect/pointer
+
+/obj/projectile/magic/pointer/on_hit(atom/target, blocked = 0, pierce_hit)
+	. = ..()
+	var/pointer_speed = 1
+	if(istype(fired_from, /obj/item/gun/magic/wand/pointer))
+		var/obj/item/gun/magic/wand/pointer/our_wand = fired_from
+		pointer_speed = our_wand.pointer_speed
+
+	var/turf/target_turf = get_turf(firer)
+
+	new /obj/effect/temp_visual/indicator(target_turf, firer, target, pointer_speed)
+
+/obj/effect/temp_visual/indicator
+	name = "pointer"
+	icon = 'icons/hud/screen_gen.dmi'
+	icon_state = null
+	plane = POINT_PLANE
+	duration = 5 SECONDS
+
+/obj/effect/temp_visual/indicator/Initialize(mapload, atom/firer, atom/hit_atom, particle_speed = 1)
+	. = ..()
+	particles = new/particles/targeting(firer, hit_atom, particle_speed)
+
+/particles/targeting
+	icon = 'icons/obj/weapons/guns/projectiles.dmi'
+	icon_state = "arrow_0"
+	width = 1000
+	height = 1000
+	count = 100
+	spawning = 0.5
+	gravity = list(0, -0.50, 0)
+	lifespan = 32
+	position = list(0, 10, 0)
+	velocity = list(4, 4, 0)
+
+	///Controls the speed of the indication arrows. The higher this number, the faster the arrows will move across the screen. 1 is default. 2 is already stupidly fast.
+	var/pixel_speed_multiplier = 1
+
+
+/particles/targeting/New(atom/source, atom/target, speed = 1)
+	. = ..()
+	if(speed && isnum(speed))
+		pixel_speed_multiplier = speed
+
+	var/pixel_speed = 8 / pixel_speed_multiplier
+	spawning = 0.5 * pixel_speed_multiplier
+
+	var/dx = target.x - source.x
+	var/dy = target.y - source.y
+	var/dist_to_target = sqrt(dx**2 + dy**2)
+	var/angle = arctan(dx, dy)
+
+	lifespan = pixel_speed * (round(dist_to_target/4) + 1)
+	gravity = list(0, (lifespan/pixel_speed) * (-0.50), 0)
+
+	var/spin_modifier = 1
+	if(angle >= 90 || angle <= -90)
+		angle = angle - 180
+		spin_modifier = -1
+
+	var/gravity_x = gravity[1] * cos(angle) - gravity[2] * sin(angle)
+	var/gravity_y = gravity[1] * sin(angle) + gravity[2] * cos(angle)
+
+	gravity = list(gravity_x, gravity_y, 0)
+
+	//to accurately determine the new velocities, we need to multiply each value by their corresponding deltas which are also modified by the lifespan
+	//with respect to the world icon size. This is because the velocity is measured in pixels, so the most simple velocity of 1 with a 32 tick lifespan
+	//will result in 1 tile travelled before the particle expires. God I hate Mqiib
+	velocity = list(dx / (lifespan / world.icon_size) - (gravity[1] * (lifespan * 0.50)) , dy / (lifespan / world.icon_size) - (gravity[2] * (lifespan * 0.50)), 1)
+	rotation = -arctan(velocity[1], velocity[2])
+	spin = (45 - rotation % 45) / lifespan * spin_modifier

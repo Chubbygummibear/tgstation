@@ -269,13 +269,34 @@
 	base_icon_state = "shrinkwand"
 	fire_sound = 'sound/magic/staff_shrink.ogg'
 	max_charges = 10 //10, 5, 5, 4
-	no_den_usage = TRUE
-	w_class = WEIGHT_CLASS_TINY
 
 /obj/item/gun/magic/wand/shrink/zap_self(mob/living/user)
 	to_chat(user, span_notice("The world grows large..."))
 	charges--
 	user.AddComponent(/datum/component/shrink, -1) // small forever
+	return ..()
+
+/////////////////////////////////////
+//WAND OF INDICATION
+/////////////////////////////////////
+
+/obj/item/gun/magic/wand/pointer
+	name = "wand of indication"
+	desc = "They will get the point."
+	ammo_type = /obj/item/ammo_casing/magic/pointer
+	// icon_state = "shrinkwand"
+	// base_icon_state = "shrinkwand"
+	// fire_sound = 'sound/magic/staff_shrink.ogg'
+	max_charges = 100
+	no_den_usage = TRUE
+	w_class = WEIGHT_CLASS_TINY
+
+	var/pointer_speed = 1
+
+/obj/item/gun/magic/wand/pointer/zap_self(mob/living/user)
+	to_chat(user, span_notice("You indicate... yourself."))
+	charges--
+	//user.point_at(user)
 	return ..()
 
 // Wand of debugging

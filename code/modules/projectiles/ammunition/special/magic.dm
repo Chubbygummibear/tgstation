@@ -88,3 +88,7 @@
 
 /obj/item/ammo_casing/magic/shrink/wand
 	projectile_type = /obj/projectile/magic/shrink/wand
+
+/obj/item/ammo_casing/magic/pointer
+	projectile_type = /obj/projectile/magic/pointer
+	harmful = FALSE
